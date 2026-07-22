@@ -1,67 +1,103 @@
-# Neutronium - An Agent Agnostic Front End Skill
----
-System Context: You are an expert Principal Systems Architect specializing in modern web performance, fine-grained reactivity, testing frameworks, and AI agent instruction design.
+# Neutronium
 
-Task Objective:
-Generate an exhaustive, enterprise-grade agent skill file named `neutronium.md` for an Astro + SolidJS + TypeScript project. This skill will serve as strict, comprehensive execution instructions for AI coding agents working in this codebase.
+**An agent-agnostic skill for building beautiful, fast front ends with Astro + SolidJS + TypeScript.**
 
-Context & Architectural Stack:
-- Hosting & Scaffolding: Astro (zero-JS by default, static/SSR routing, Content Collections, Astro Actions)
-- Client-Side Reactivity: SolidJS (compiled fine-grained reactivity, direct DOM manipulation, no Virtual DOM)
-- Type System: TypeScript (strict mode, prop contracts across hydration boundaries)
-- Styling: Astro scoped styles, Tailwind CSS/UnoCSS, CSS Modules
-- Mutations: Astro Actions (`astro:actions`) for type-safe RPC server functions
-- Testing: Vitest + @solidjs/testing-library for units/components, Playwright for E2E and hydration verification
+Neutronium is a set of execution instructions for AI coding agents — Claude
+Code, Cursor, Copilot, Codex, or anything that can read a markdown file. Drop
+it into a project and any agent working on the front end inherits two things
+most generated UI lacks:
 
-Detailed Domain Guardrails & Rules to Include in the Skill:
+1. **Correctness in a stack that punishes React instincts.** Solid's JSX looks
+   like React's, so agents steeped in React training data reflexively write
+   code that compiles and silently doesn't work — destructured props that
+   freeze, effect cleanups that never run, `.map()` calls that rebuild the DOM.
+   Neutronium names each trap, explains *why* it fails, and gives the correct
+   pattern.
+2. **A real visual-quality bar.** "It renders" is not "it's designed."
+   Neutronium defines a design process (tokens → personality → components), the
+   craft rules (typography, spacing, color, motion, states), and an anti-slop
+   checklist that catches the generic-generated-UI look before it ships.
 
-1. FILE & ARCHITECTURAL SEPARATION
-   - `.astro` files: Server-only context. Handle layouts, page routing, build-time/SSR data fetching, SEO tags, and static HTML. Zero client-side JS shipped by default.
-   - `.tsx` files: Interactive SolidJS islands ONLY. Must be lean and focused on interactive state.
-   - `.ts` files: Utilities, domain interfaces, Astro Actions schemas, and shared global reactive stores (using top-level Solid signals/stores).
+## What's inside
 
-2. HYDRATION DISCIPLINE
-   - Never embed a SolidJS component (`.tsx`) into an `.astro` page without an explicit `client:*` directive, unless intentionally rendering static HTML on the server.
-   - Prefer `client:visible` or `client:idle` for non-critical elements. Reserve `client:load` strictly for critical above-the-fold controls.
+```
+SKILL.md                          The core skill: mental model, hard rules,
+                                  hydration discipline, verification workflow
+references/
+├── solid-reactivity.md           SolidJS deep dive: signals, stores, resources,
+│                                 control flow, refs, events, context
+├── astro-islands.md              Islands architecture: hydration directives,
+│                                 the serialization boundary, Astro Actions,
+│                                 progressive-enhancement forms
+├── design.md                     The beauty bar: tokens, typography, color,
+│                                 motion, states, accessibility, anti-slop
+└── testing.md                    Vitest + @solidjs/testing-library + Playwright:
+                                  what to test where, hydration verification
+scripts/
+└── audit.sh                      Mechanical audit: greps for always-wrong
+                                  patterns (React imports, className,
+                                  destructured props, ...) — exits nonzero
+```
 
-3. SOLIDJS REACTIVITY RULES (ANTI-REACT COMPLIANCE)
-   - Banned Imports: Strictly prohibit imports from 'react' (`useState`, `useEffect`, `useRef`, `useMemo`, `useCallback`).
-   - Prop Access: Never destructure `props` in function parameters or component bodies (e.g., `const { title } = props` is FORBIDDEN). Access properties exclusively via `props.title`.
-   - Prop Defaults & Splitting: Enforce `mergeProps` for default values and `splitProps` for passing rest attributes down to DOM elements.
-   - Signal Invocation: Signals are getter functions. Must be read by invoking them: `count()`, not `count`.
-   - JSX Attributes: Use native `class` and `classList={{ active: isActive() }}`. Explicitly ban `className`.
-   - Control Flow Components: Enforce Solid primitives (`<Show>`, `<For>`, `<Index>`, `<Switch>`, `<Match>`) over native JS `.map()` or ternary operators inside JSX.
-   - Lifecycle Primitives: Enforce `onMount()` for component setup and `onCleanup()` for teardown/disposal. Do NOT return cleanup functions inside `createEffect`.
-   - Complex State: Enforce `createStore` from 'solid-js/store' for nested objects and arrays, rather than deeply nested `createSignal` calls.
+The structure is deliberate: `SKILL.md` is small enough to sit in an agent's
+context permanently, and it tells the agent when to pull in each reference.
+Agents read the deep dives lazily, only when the task touches that domain.
 
-4. ASTRO TO SOLID DATA BOUNDARIES & ACTIONS
-   - All props passed from `.astro` to `.tsx` across hydration boundaries MUST be JSON-serializable (primitives, plain arrays, plain objects).
-   - Form Handling & Mutations: Enforce Astro Actions (`astro:actions`) for backend operations. SolidJS client islands must call actions directly (e.g., `await actions.updateProfile(data)`) with type-safe z.object validation schemas defined on the server side.
-   - Progressive Enhancement: Static forms in `.astro` files must degrade gracefully using standard HTML POST actions, while SolidJS islands enhance them with optimistic client state.
+## Installation
 
-5. STYLING CONVENTIONS
-   - Astro Pages/Layouts: Use scoped `<style>` blocks in `.astro` files for static layout CSS.
-   - Solid Components: Use Tailwind CSS utility classes paired with Solid's `classList` directive for dynamic state styling. If scoped component styles are needed, use CSS Modules (`.module.css`).
-   - Banned Attributes: Never write `className` in `.tsx` files; it renders as a non-standard custom attribute in SolidJS.
+Neutronium follows the [Agent Skills](https://agentskills.io) format
+(`SKILL.md` with YAML frontmatter), which most agent harnesses either read
+natively or can be pointed at.
 
-6. CROSS-ISLAND SHARED STATE
-   - Instruct the agent to create module-level signals/stores in shared `.ts` files (e.g., `src/stores/cart.ts`) to manage state across multiple independent Solid islands on the same page without external state managers.
+**Claude Code** — clone into the skills directory (project-local or global):
 
-7. TESTING & QUALITY ASSURANCE STRATEGY
-   - Unit & Component Testing: Enforce Vitest with `@solidjs/testing-library` for isolated SolidJS component state, signals, and store testing.
-   - Hydration & E2E Testing: Enforce Playwright for full-page user flows to verify that client islands successfully hydrate, become interactive without layout shifts, and correctly perform server actions.
+```bash
+git clone https://github.com/crussella0129/Neutronium .claude/skills/neutronium   # project
+git clone https://github.com/crussella0129/Neutronium ~/.claude/skills/neutronium # global
+```
 
-8. QUALITY GATES & AUDIT CHECKLIST
-   - Define a step-by-step verification checklist for the agent to self-audit generated code:
-     1. Search for forbidden React hooks, `useEffect`, or `className` attributes.
-     2. Check for destructured `props` in Solid components.
-     3. Verify all Solid components embedded in `.astro` files have `client:*` directives.
-     4. Check that Astro Action input schemas match client payload types.
-     5. Ensure TypeScript compilation and test runs pass (`astro check`, `vitest run`, `playwright test`).
+**Any AGENTS.md-convention agent** (Codex, Jules, Amp, ...) — vendor the repo
+and point at it:
 
-Output Format Instructions:
-- Output as a complete markdown file starting with standard YAML frontmatter (`name: astro-solid-ts`, `description: ...`).
-- Use explicit visual code blocks showing "❌ FORBIDDEN (React/Anti-Pattern)" vs "✅ MANDATORY (Solid/Astro Pattern)" for every key rule.
-- Keep the language authoritative, unambiguous, and formatted for optimal LLM context parsing.
+```bash
+git clone https://github.com/crussella0129/Neutronium vendor/neutronium
+echo "For all front-end work, follow vendor/neutronium/SKILL.md and the reference files it links." >> AGENTS.md
+```
 
-Generate the complete `astro-solid-ts.md` file content now.
+**Cursor** — add a rule in `.cursor/rules/neutronium.mdc` that applies to
+`*.astro`, `*.tsx`, and front-end `*.ts` files and instructs: *"Follow
+vendor/neutronium/SKILL.md; read its linked references when the task touches
+their domain."*
+
+**GitHub Copilot** — add the same pointer line to
+`.github/copilot-instructions.md`.
+
+**Anything else** — paste `SKILL.md` into the system prompt or context. It's
+self-contained; the references add depth but the core rules stand alone.
+
+## The stack it governs
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| Framework | [Astro](https://astro.build) | Zero JS by default; islands hydrate only what's interactive |
+| Reactivity | [SolidJS](https://solidjs.com) | Fine-grained, compiled, no virtual DOM, no re-renders |
+| Types | TypeScript (strict) | Contracts across the server/island serialization boundary |
+| Styling | Design tokens + Tailwind / scoped styles / CSS Modules | Consistency is what reads as "designed" |
+| Mutations | Astro Actions | End-to-end typed RPC with Zod validation, progressive enhancement built in |
+| Testing | Vitest + @solidjs/testing-library + Playwright | Logic → components → real-browser hydration truth |
+
+## Philosophy
+
+Ship almost no JavaScript. Hydrate reluctantly. Let the server do what the
+server already knows. Inside islands, embrace Solid's run-once component model
+instead of fighting it with React habits. Treat visual quality — typography,
+spacing, states, motion, accessibility — as a requirement with the same weight
+as type-checking. Verify mechanically what can be verified mechanically
+(`scripts/audit.sh`), and reserve judgment for what can't.
+
+Fast and ugly fails. Beautiful and bloated fails. Neutronium exists to make
+agents ship neither.
+
+## License
+
+[GPL-3.0](LICENSE)
