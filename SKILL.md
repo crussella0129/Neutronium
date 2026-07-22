@@ -1,13 +1,18 @@
 ---
 name: neutronium
 description: >-
-  Execution rules and a visual-quality bar for front-end work in Astro + SolidJS +
-  TypeScript codebases. Use this skill for ANY task that creates or edits .astro
-  files, SolidJS components (.tsx), front-end .ts modules, styles, forms, client
-  state, animations, or front-end tests — even when the request is as vague as "add
-  a page", "fix this component", "wire up this form", or "make it look better" and
-  never names the frameworks. Also use it when reviewing or refactoring existing
-  front-end code in this stack.
+  Execution rules and a visual-quality bar for all front-end work in an Astro +
+  SolidJS + TypeScript codebase. Use this skill for ANY task that touches the UI
+  or front-end files — creating or editing pages and components (.astro, .tsx),
+  styles, forms, search/filter features, toggles, client state, animations, or
+  front-end tests — even when the request never names the frameworks ("add a
+  page", "wire up this form", "make it look better"). Also trigger on front-end
+  symptoms: an element that renders but does nothing when clicked, layout shift
+  while loading, janky motion, build/SSR errors like "window is not defined", or
+  state that falls out of sync between components on a page. Always use it when
+  refactoring or reviewing front-end code, especially anything written with React
+  idioms (useState/useEffect, destructured props, className). Not for backend
+  APIs, CI/tooling config, or React/Vue/Next codebases.
 license: GPL-3.0
 ---
 
