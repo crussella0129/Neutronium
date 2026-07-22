@@ -3,7 +3,7 @@
 System Context: You are an expert Principal Systems Architect specializing in modern web performance, fine-grained reactivity, testing frameworks, and AI agent instruction design.
 
 Task Objective:
-Generate an exhaustive, enterprise-grade agent skill file named `astro-solid-ts.md` for an Astro + SolidJS + TypeScript project. This skill will serve as strict, comprehensive execution instructions for AI coding agents working in this codebase.
+Generate an exhaustive, enterprise-grade agent skill file named `neutronium.md` for an Astro + SolidJS + TypeScript project. This skill will serve as strict, comprehensive execution instructions for AI coding agents working in this codebase.
 
 Context & Architectural Stack:
 - Hosting & Scaffolding: Astro (zero-JS by default, static/SSR routing, Content Collections, Astro Actions)
