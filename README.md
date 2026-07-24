@@ -34,9 +34,14 @@ references/
 └── testing.md                    Vitest + @solidjs/testing-library + Playwright:
                                   what to test where, hydration verification
 scripts/
-└── audit.sh                      Mechanical audit: greps for always-wrong
-                                  patterns (React imports, className,
-                                  destructured props, ...) — exits nonzero
+├── audit.sh                      Mechanical audit: always-wrong patterns
+│                                 (React imports, className, destructured
+│                                 props, ...) plus scope-depth grading of
+│                                 browser-global access — exits nonzero
+└── test-audit.sh                 Fixture tests for audit.sh itself
+tests/
+└── fixtures/                     Known-good and known-bad .tsx cases pinning
+                                  each audit rule to an expected verdict
 ```
 
 The structure is deliberate: `SKILL.md` is small enough to sit in an agent's
@@ -52,15 +57,15 @@ natively or can be pointed at.
 **Claude Code** — clone into the skills directory (project-local or global):
 
 ```bash
-git clone https://github.com/crussella0129/Neutronium .claude/skills/neutronium   # project
-git clone https://github.com/crussella0129/Neutronium ~/.claude/skills/neutronium # global
+git clone https://github.com/crussella0129/Animus_Neutronium .claude/skills/neutronium   # project
+git clone https://github.com/crussella0129/Animus_Neutronium ~/.claude/skills/neutronium # global
 ```
 
 **Any AGENTS.md-convention agent** (Codex, Jules, Amp, ...) — vendor the repo
 and point at it:
 
 ```bash
-git clone https://github.com/crussella0129/Neutronium vendor/neutronium
+git clone https://github.com/crussella0129/Animus_Neutronium vendor/neutronium
 echo "For all front-end work, follow vendor/neutronium/SKILL.md and the reference files it links." >> AGENTS.md
 ```
 

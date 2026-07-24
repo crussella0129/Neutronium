@@ -197,14 +197,20 @@ change.
 
 ## The full gate sequence
 
-Every task ends with all of these green, in this order (cheap → expensive):
+Every task ends with all of the *applicable* gates green, in this order
+(cheap → expensive):
 
 ```bash
 bash scripts/audit.sh src/   # mechanical pattern audit (see SKILL.md)
 astro check                  # types across .astro/.ts/.tsx incl. the island boundary
-vitest run                   # layers 1–2
-npx playwright test          # layer 3
+vitest run                   # layers 1–2 — once configured
+npx playwright test          # layer 3 — once configured
 ```
+
+The first two always apply. The test gates apply as soon as the project has
+them wired up; on greenfield work they often don't exist yet, in which case
+either stand them up ([Setup](#setup)) or state plainly that there is no test
+coverage — do not silently drop the gate.
 
 A red gate is a stop, not a note. If a gate can't run in the current
 environment (e.g., no browsers installed for Playwright), say so explicitly in
