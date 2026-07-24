@@ -99,7 +99,7 @@ describe('<Counter />', () => {
     render(() => <Counter initial={2} />);
     const button = screen.getByRole('button', { name: /count: 2/i });
     fireEvent.click(button);
-    expect(await screen.findByRole('button', { name: /count: 3/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /count: 3/i })).toBeTruthy();
   });
 });
 ```
@@ -118,6 +118,14 @@ Conventions:
   test island behavior on success, input error, and server error paths — all
   three, since the error branches are where UI quality lives (see
   design.md, "States").
+- **`astro check` type-checks your tests too**, because Astro's `tsconfig`
+  includes `**/*`. That makes `@testing-library/jest-dom` matchers a trap:
+  `toBeInTheDocument()` needs its types wired in (`import
+  '@testing-library/jest-dom/vitest'` in the setup file, *and* that setup file
+  inside `include`) or the gate goes red on the matcher rather than on your
+  code. The queries already throw when nothing matches, so plain
+  `expect(...).toBeTruthy()` gets the same assertion with no type plumbing —
+  prefer it unless you want jest-dom's failure messages enough to wire them up.
 
 ## Layer 3: Playwright E2E and hydration
 
@@ -161,7 +169,11 @@ test('hydration causes no layout shift', async ({ page }) => {
     new Promise<number>((resolve) => {
       let total = 0;
       new PerformanceObserver((list) => {
-        for (const e of list.getEntries() as any[]) if (!e.hadRecentInput) total += e.value;
+        for (const entry of list.getEntries()) {
+          // LayoutShift isn't in lib.dom yet; narrow rather than reaching for `any`.
+          const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
+          if (!shift.hadRecentInput) total += shift.value;
+        }
       }).observe({ type: 'layout-shift', buffered: true });
       setTimeout(() => resolve(total), 3000);
     })

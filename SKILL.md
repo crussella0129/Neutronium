@@ -180,6 +180,21 @@ against Tailwind v4.3.3: `--color-*`, `--text-*`, `--font-*`, `--font-weight-*`,
 `--blur-*`, `--container-*`, `--aspect-*`, `--perspective-*` and `--spacing-*`
 all map; `--duration-*` does not.)
 
+A second scaffolding fact for the same pairing, because it surfaces as an
+unreadable *type* error rather than a dependency error: `@tailwindcss/vite`
+resolves a newer Vite than Astro pins, npm hoists that copy, and `astro check`
+then fails with a fifteen-line `Type 'Plugin<any>[]' is not assignable to type
+'PluginOption'` wall naming two identical-looking Vite paths. Nothing is wrong
+with the config — there are simply two Vites. Pin one:
+
+```json
+"overrides": { "vite": "^6.4.3" }
+```
+
+Match whatever Astro itself depends on; if the error comes back after an
+upgrade, read the version at `node_modules/astro/node_modules/vite/package.json`
+and pin to that.
+
 ## The beauty bar
 
 "Works" is half the job. Before building any UI, read
