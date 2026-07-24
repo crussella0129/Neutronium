@@ -157,42 +157,99 @@ is shared across all requests, so stores are for client-side state only.
   Tailwind). A raw hex color or arbitrary pixel value in a component is a defect
   — if the value matters, it belongs in the token layer.
 
+One Tailwind v4 detail, because it makes the no-arbitrary-values rule
+unsatisfiable if you don't know it: almost every `@theme` namespace generates
+utilities, but the utility prefix is not always the token prefix (`--radius-md`
+→ `rounded-md`), and **`--duration-*` generates nothing at all** — `duration-*`
+only accepts a bare number. So a token-driven transition needs a utility class
+rather than a Tailwind utility:
+
+```css
+@layer utilities {
+  .transition-token {
+    transition-property: color, background-color, border-color, transform, opacity;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+  }
+}
+```
+
+Reaching for `duration-[130ms]` instead is the defect this prevents. (Verified
+against Tailwind v4.3.3: `--color-*`, `--text-*`, `--font-*`, `--font-weight-*`,
+`--radius-*`, `--shadow-*`, `--ease-*`, `--tracking-*`, `--leading-*`,
+`--blur-*`, `--container-*`, `--aspect-*`, `--perspective-*` and `--spacing-*`
+all map; `--duration-*` does not.)
+
+A second scaffolding fact for the same pairing, because it surfaces as an
+unreadable *type* error rather than a dependency error: `@tailwindcss/vite`
+resolves a newer Vite than Astro pins, npm hoists that copy, and `astro check`
+then fails with a fifteen-line `Type 'Plugin<any>[]' is not assignable to type
+'PluginOption'` wall naming two identical-looking Vite paths. Nothing is wrong
+with the config — there are simply two Vites. Pin one:
+
+```json
+"overrides": { "vite": "^6.4.3" }
+```
+
+Match whatever Astro itself depends on; if the error comes back after an
+upgrade, read the version at `node_modules/astro/node_modules/vite/package.json`
+and pin to that.
+
 ## The beauty bar
 
 "Works" is half the job. Before building any UI, read
 [references/design.md](references/design.md) — it defines the visual standard.
-The five commitments, inline, because they're cheap to hold in mind:
+The five commitments, compressed:
 
-1. **Tokens before components.** Establish (or find) the project's type scale,
-   spacing scale, color tokens, radii, shadows, and motion durations first.
-   Consistency is what reads as "designed".
-2. **Typography and spacing carry the design.** Body text ≥ 1rem at line-height
-   ~1.6, measure 45–75ch, one deliberate type scale. Space between sections
-   visibly larger than space within them.
+1. **Tokens before components.** Type scale, spacing, color, radii, shadows and
+   motion established first. Consistency is what reads as "designed".
+2. **Typography and spacing carry the design.** Body ≥ 1rem at line-height ~1.6,
+   measure 45–75ch, one deliberate scale. Space between sections visibly larger
+   than space within them.
 3. **Every state is designed.** Hover, focus-visible, active, disabled, loading,
-   empty, and error states — an unstyled focus ring or a spinner-only page means
-   the work isn't finished.
+   empty, error. An unstyled focus ring means the work isn't finished.
 4. **Motion is communication.** 120–350ms, ease-out on enter, `transform`/
    `opacity` only, always honoring `prefers-reduced-motion`.
-5. **No generic slop.** Unconsidered framework-default blue, uniform card grids
-   with `shadow-md rounded-lg`, emoji as icons, centered-heading-plus-three-cards
-   rhythm on every section — these are the tells of ungoverned generation. Make
-   choices; vary rhythm; let one accent color work.
+5. **No generic slop.** Make choices; vary rhythm; let one accent color work.
 
-Accessibility is part of the bar, not a separate concern: semantic HTML first,
-real `<button>`s, labeled inputs, keyboard operability, WCAG AA contrast.
+Commitment 5 needs teeth, because generic is the *default pull* rather than an
+occasional slip — so it gets a checklist instead of a principle. Before calling
+any UI finished, confirm none of these are present:
+
+- [ ] Framework-default blue accent, arrived at by omission rather than decision
+- [ ] Pure-gray neutrals with no tint pushed into them
+- [ ] Every surface a card with `rounded-lg shadow-md p-6`; more than one card
+      grid on the page
+- [ ] The centered-heading + subtitle + 3-column-icon-cards rhythm, twice
+- [ ] Emoji standing in for an icon system
+- [ ] Full-width paragraphs; centered body text
+- [ ] Values off the token scales (`p-[13px]`, `#4a7dc9`, `duration-[230ms]`)
+- [ ] `focus:outline-none` with no visible replacement
+- [ ] Spinner-only loading; blank empty states; toast-only errors
+- [ ] Dark mode as naive inversion, or `dark:` overrides scattered through
+      components instead of handled in the token layer
+- [ ] Animation on load for content that was already server-rendered
+
+Read design.md *before* building, not after: by the time this checklist catches
+something, the decision it came from is usually load-bearing. Accessibility is
+part of the bar, not a separate concern — semantic HTML first, real `<button>`s,
+labeled inputs, keyboard operability, WCAG AA contrast.
 
 ## Verification — run before declaring any task done
 
-1. **Mechanical audit** — run the bundled script; it greps for the always-wrong
-   patterns (React imports/hooks, `className`, destructured props, missing signal
-   calls it can detect):
+1. **Mechanical audit** — run the bundled script. It flags the always-wrong
+   patterns (React imports/hooks, `className`, destructured props) and grades
+   browser-global access by scope depth: module top level **fails** (runs on
+   import, breaks SSR unconditionally), component setup body **warns** (runs
+   during the server render), and `onMount`/handler/effect access is silent
+   because it's correct:
 
    ```bash
    bash scripts/audit.sh src/
    ```
 
-   (Script lives in this skill's directory; pass the project's source dir.)
+   (Script lives in this skill's directory; pass the project's source dir. If
+   you change a rule, `bash scripts/test-audit.sh` runs its fixture tests.)
 
 2. **Judgment audit** — things grep can't see:
    - Every Solid component embedded in `.astro` that needs interactivity has a
@@ -203,13 +260,20 @@ real `<button>`s, labeled inputs, keyboard operability, WCAG AA contrast.
    - Forms degrade gracefully without JS.
    - New UI passes the beauty bar: tokens used, states designed, motion respectful.
 
-3. **Gates** — all must pass:
+3. **Gates:**
 
    ```bash
-   astro check      # type-checks .astro and the island boundary
-   vitest run       # unit + component tests
-   playwright test  # E2E + hydration verification
+   astro check          # types across .astro/.ts/.tsx incl. the island boundary
+   vitest run           # unit + component tests — if the project has them
+   npx playwright test  # E2E + hydration — if the project has them
    ```
+
+   `astro check` always applies. The test gates apply once a project has them
+   wired up; on greenfield work they usually don't exist yet, and the setup
+   (Vitest's `resolve.conditions`, Playwright against the build rather than the
+   dev server) is in [references/testing.md](references/testing.md#setup). A red
+   gate is a stop, not a note — and a gate you *couldn't* run gets reported as
+   not run. Never let silence imply it passed.
 
 Testing patterns — component tests with `@solidjs/testing-library`, testing
 signals/stores in isolation, Playwright hydration checks:
